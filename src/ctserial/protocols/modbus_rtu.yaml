@@ -1,0 +1,100 @@
+model: request
+  id:
+    bytes: 1
+    type: int
+  func:
+    bytes: 2
+    type: int
+    values:
+      1: read coils
+      2: read descrete inputs
+      3: read registers
+      4: read input registers
+      5: write single coil
+      6: write single register
+      15: write multiple coils
+      16: write multiple registers
+  # Alternate solution:
+  func_data:
+    min_bytes: 4
+    max_bytes: 252
+    dep_field: func
+      ? [1,2,3,4]
+      :
+        address:
+          bytes: 2
+          type: int
+        count:
+          bytes: 2
+          type: int
+      ? [5,6]
+      :
+        address:
+          bytes: 2
+          type: int
+        data:
+          bytes: 2
+          type: int
+      ? [15,16]
+      : 
+        address:
+          bytes: 2
+          type: int
+        data:
+          min_bytes: 2
+          max_bytes: 250    # ToDo: need to verify
+  crc:
+    bytes: 2
+    type: crc
+
+
+model: response
+  id:
+    copy: model.request.id
+  func:
+    copy: model.request.func
+  func_data:
+    min_bytes: 4
+    max_bytes: 252
+    dep_field: func
+      ? [1,2]
+      :
+        type:
+          bytes: 1
+          type: int
+        data:
+          bytes: 2
+          values:
+            0x00: false
+            0xFF: true
+      ? [3,4]
+      :
+        type:
+          bytes: 1
+          type: int
+        data:
+          bytes: 2
+          type: int
+      ? [15,16]
+      : 
+        type:
+          bytes: 2
+          type: int
+        data:
+          min_bytes: 2
+          max_bytes: 250    # ToDo: need to verify
+  crc:
+    copy: request.crc
+
+
+state:
+  - request
+  - response
+
+
+macros:
+  enum: 
+    - sendhex 01 02 0000 0100 ????
+    - sendhex 01 01 0000 0100 ????
+    - sendhex 01 04 0000 0100 ????
+    - sendhex 01 03 0000 0100 ????
